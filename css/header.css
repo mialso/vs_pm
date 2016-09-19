@@ -1,0 +1,17 @@
+header {
+  width: 100%;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: #1abc9c;
+  margin-bottom: 70px; }
+  header h1, header h2, header h3 {
+    color: white; }
+  @media screen and (max-width: 1200px) {
+    header {
+      margin-bottom: 34px;
+      padding-top: 20px; } }
+  @media screen and (max-width: 900px) {
+    header {
+      padding-top: 40px;
+      padding-bottom: 5px;
+      margin-bottom: 8.5px; } }

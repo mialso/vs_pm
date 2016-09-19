@@ -1,0 +1,9 @@
+ul, ol {
+  margin-left: 20px;
+  margin-bottom: 20px; }
+  ul li, ol li {
+    margin-top: 10px; }
+
+ol {
+  list-style-type: decimal;
+  white-space: nowrap; }
