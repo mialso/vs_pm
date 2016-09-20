@@ -26,10 +26,18 @@
             models: ["user", "project"]
         },
         admin: {
-            ui: ["dash_main", "menu", "dash_header"],
+            ui: ["admin_main", "dash_main", "menu", "settings", "wiki", "menu_entry"],
             actions: {
+				dash_main: [
+					["show_wiki", "app.app.show_wiki()"],
+					["show_settings", "app.app.show_settings()"],
+					["show_health_check", "app.app.show_health_check()"]
+				],
                 menu: [
 					["logout", "app.core.user.logout()"]
+				],
+				menu_entry: [
+					["show", "app.app.show();"]
 				]
             },
             models: ["user", "project", "app"]
@@ -51,9 +59,11 @@
 		log.info = "App_model(): new model create: name ="+this.name+"; id="+this.id+";";
 		core.model.Model.call(this);
 
-		this.message = message.concat([""]);
-
 		this.get_config_data = get_config_data;
+
+		this.show = core.task.create(["show", show_app]);
+		this.show_wiki = core.task.create(["show_wiki", show_wiki]);
+		this.show_settings = core.task.create(["show_settings", show_settings]);
 
 	}
 	App_model.prototype = Object.create(core.model.Model.prototype);
@@ -64,6 +74,18 @@
 		return data;
 	}
 
+	function show_app() {
+		this.ui["dash_main"].show = true;
+		this.task.run_async("object", this.ui["dash_main"], "update");
+	}
+	function show_wiki() {
+		this.ui["wiki"].show = true;
+		this.task.run_async("object", this.ui["wiki"], "update");
+	}
+	function show_settings() {
+		this.ui["settings"].show = true;
+		this.task.run_async("object", this.ui["settings"], "update");
+	}
 	function test() {
 		return 255;
 	}

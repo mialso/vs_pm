@@ -1,2 +1,12 @@
-body|manager,admin|$body>named:app_menu,app_dash_main|
-<div class="main g--10 g-m--12 m--2 m-m--0 no-margin-vertical ">|$body_main>single:app_dash_header|</div>
+body_main|manager,admin|
+<div class="app g--12 no-margin-vertical ">
+	<header class="container--baseline">
+		<h1 class="dash_header m--1 g--4">app dash header</h1>
+		<nav class="m--4 g--3 nav--horizontal">
+			<a onclick="|#show_wiki|">wiki</a>
+			<a onclick="|#show_settings|">settings</a>
+			<a onclick="|#show_health_check|">health check</a>
+		</nav>
+	</header>
+	<div class="dash">|$body_app_dash>single:app_wiki|</div>
+</div>

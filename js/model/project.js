@@ -63,7 +63,7 @@
 		this.show = core.task.create(["show", show_projects]);
 
 		this.details = function(data) {
-			console.log("details not implemented yet, data ="+data.attributes.getNamedItem("mls_id").value);
+			console.log("details not implemented yet, data ="+data.attributes.getNamedItem("yaf_id").value);
 		}
 		this.update = function() {
 			console.log("update not implemented yet");

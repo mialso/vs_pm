@@ -239,11 +239,15 @@
 		this.get_conts = function() { return containers;};
 		this.get_log = function() { return log;};
 	}
+	/* 
+	 * purspose: clean up
+	 */
 	function clean_up() {
 		containers = {};
 	}
-	function update_container([cont_name, elem]) {
+	function update_container(elem) {
 		var func = "update_container(): ";
+		var cont_name = elem.parent_container;
 		// if container is not loaded yet, put element to queue
 		if (!containers[cont_name]) {
 			// create queue if absent
@@ -251,7 +255,6 @@
 				this.task.debug(func+"new el_queue ="+cont_name);
 				el_queue[cont_name] = [];
 			}
-			this.task.debug(func+"element \""+elem.name+"\" in el_queue ="+cont_name);
 			el_queue[cont_name].push(elem);
 			this.task.result = elem.global_id+" in el_queue";
 		} else {
@@ -284,7 +287,6 @@
 
 		// service static functions, to be used by tasks
 		this.get_elem_id = function(elem) {
-			//return elem.model.name+elem.model.id;
 			return elem.name;
 		};
 		this.get_elem_index = function(el_id) {
@@ -298,12 +300,6 @@
 			case "single":
 				break;
 			case "named":
-				this.get_elem_id = function(elem) {
-					return elem.name;
-				}
-				this.get_elem_index = function(el_id) {
-					return this.elem_names.indexOf(el_id);
-				};
 				this.add_element = function(el_id) {
 					return -1;
 				};
@@ -315,7 +311,7 @@
 				break;
 		}
 		log.info = func+"new <"+this.name+">: type ="+type+"; elems ="+elems;
-		this.prnt = name.split("_").slice(0,-1).join("_");
+		//this.parent_element = name.split("_").slice(0,-1).join("_");
 
 		this.head = name.split("_").join(" .");
 
@@ -349,7 +345,6 @@
 			this.task.debug(func+"element added successfully");
 		}
 		// update element data
-		//this.elems[elem_ind] = elem.html.join("").replace(/[\n\t]/g, "");
 		this.elems[elem_ind] = elem;
 		this.task.debug(func+"\""+el_id+"["+elem_ind+"]\" updated");
 		// mark loaded elements
@@ -360,13 +355,11 @@
 			this.task.result = this.loaded[elem_ind]+" is loaded to \""+this.global_id+"\"";
 			return;
 		}
-		//this.change(el_id, elem_ind);
+
 		if (elem.show) {
 			show.call(this, elem_ind);
-			this.task.result = this.loaded[elem_ind]+" is shown";
 		} else {
 			hide.call(this, elem_ind);
-			this.task.result = this.loaded[elem_ind]+" is hidden";
 		}
 	}
 	/*
@@ -377,7 +370,6 @@
 		if (this.shown[elem_ind]) {
 			hide.call(this, elem_ind);
 		}
-		change.call(this, elem_ind);
 		// if new containers added - call parent ready on each
 		var elem = this.elems[elem_ind];
 		if (0 < elem.containers.length) {
@@ -390,7 +382,11 @@
 				this.task.run_async("object", containers[name], "parent_ready", true);
 			}
 		}
+		// TODO if change call fails, this should not be true
 		this.shown[elem_ind] = true;
+		this.task.debug(this.elems[elem_ind].global_id+" is shown ="+this.shown[elem_ind]);
+
+		change.call(this, elem_ind);
 	}
 	/*
 	 * purpose: to hide element
@@ -398,7 +394,6 @@
 	 */
 	function hide(elem_ind) {
 		this.elems[elem_ind].show = false;
-		dom_update.call(this, elem_ind, glob.document.createElement("div"));
 		var elem = this.elems[elem_ind];
 		if (0 < elem.containers.length) {
 			for (var i = 0; i < elem.containers.length; ++i) {
@@ -408,27 +403,29 @@
 					return;
 				}
 				containers[name].parent_ready_bool = false;
-				this.task.debug("container \""+name+"\" parent ready [false]");
+				this.task.debug("container \""+name+"\" parent ready ="+containers[name].parent_ready_bool);
 			}
 		}
-		this.shown[elem_ind] = undefined;
-		this.task.debug(elem.name+"is hidden");
+		this.shown[elem_ind] = false;
+		this.task.debug(this.elems[elem_ind].global_id+" is shown ="+this.shown[elem_ind]);
+
+		dom_update.call(this, elem_ind, glob.document.createElement("div"));
 	}
 	/*
-	 * purpose: to change element in container
+	 * purpose: to create dom-element from element and exchange it in container with old one
 	 * context: Container
 	 */
 	function change(el_ind) {
-		var func = "insert(): ";
+		var func = "change(): ";
 		var tmp_node = glob.document.createElement("div");
 		tmp_node.innerHTML = this.elems[el_ind].html.join("").replace(/[\n\t]/g, "");
 		if (!tmp_node.firstChild || (tmp_node.firstChild.nodeType !== Node.ELEMENT_NODE)) {
 			this.task.error("unable to create new element: not valid string ="+this.elems[el_ind]);
 			return;
 		}
-		tmp_node.firstChild.setAttribute("mls_id", this.elems[el_ind].global_id);
+		tmp_node.firstChild.setAttribute("yaf_id", this.elems[el_ind].global_id);
+		this.task.debug(func+"new element to exchange at["+el_ind+"] ready");
 		dom_update.call(this, el_ind, tmp_node.firstChild);
-		this.task.result = this.name+": child["+el_ind+"]: updated";
 	}
 	/*
 	 * purpose: to update element at browser dom
@@ -436,12 +433,16 @@
 	 */
 	function dom_update(el_ind, new_el) {
 		var func = "dom_update(): ";
-		var prnt = glob.document.querySelector(this.head);
-		if (!prnt) {
+		var parent_element = glob.document.querySelector(this.head);
+		if (!parent_element) {
 			this.task.error(func+"container parent is not in dom: "+this.head+">"); 
 			return;
 		}
-		var childrens = prnt.children.length;
+		var childrens = parent_element.children.length;
+		/* this is a key logic for all containers except 'single'
+		 * index to be processed is allowed to be equal or +1 from last child index
+		 * in case the index is 1 more only append is allowed - TODO
+		 */
 		if (("single" !== this.type) && (el_ind > childrens)) {
 			this.task.error(func+"element index is to high ="+el_ind+": there is no child to update, childrens ="+childrens);
 			return;
@@ -451,11 +452,11 @@
 			el_ind = 0;
 		}
 		if (el_ind === childrens) {
-			prnt.appendChild(new_el);
-			this.task.debug(func+" new appended at "+el_ind);
+			parent_element.appendChild(new_el);
+			this.task.result = func+" new element appended at "+el_ind;
 		} else {
-			prnt.replaceChild(new_el, prnt.children[el_ind]);
-			this.task.debug(func+" new replaced at "+el_ind);
+			parent_element.replaceChild(new_el, parent_element.children[el_ind]);
+			this.task.result = func+" new element replaced at "+el_ind;
 		}
 	}
 	/*
@@ -473,20 +474,19 @@
 			return;
 		}
 		this.task.debug("loaded ="+JSON.stringify(this.loaded));
-		var prnt = glob.document.querySelector(this.head);
-		if (!prnt) {
+		var parent_element = glob.document.querySelector(this.head);
+		if (!parent_element) {
 			this.task.error(func+"parent is not in dom: "+this.head+">"); 
 			return;
 		}
 		// TODO single is another
-		//this.create_children();
-		create_children.call(this, prnt);
+		create_children.call(this, parent_element);
 	}
 	/*
 	 * purpose: to create children from allready loaded or empty to be updated later
 	 * context: Container
 	 */
-	function create_children(prnt) {
+	function create_children(parent_element) {
 		var func = "create_children(): ";
 		// get the number of elements to be created
 		var child_elems = (this.elem_names.length > this.loaded.length) ? this.elem_names.length : this.loaded.length;
@@ -495,22 +495,13 @@
 		}
 		// create empty elements to be changed on update
 		for (var i = 0; i < child_elems; ++i) {
-/*
-			var el = glob.document.createElement("div");
-			if (this.loaded[i]) {
-				var tmp_el = el;
-				tmp_el.innerHTML = this.elems[i];
-				el = tmp_el.firstChild;
-			}
-			prnt.appendChild(el);
-*/
 			if (this.loaded[i]) {
 				show.call(this, i);
 			} else {
-				prnt.appendChild(glob.document.createElement("div"));
+				parent_element.appendChild(glob.document.createElement("div"));
 			}
 		}
-		this.task.result = this.name+": children.length = "+prnt.children.length;
+		this.task.result = this.name+": children.length = "+parent_element.children.length;
 /*
 		if (child_elems !== prnt.children.length) {
 			this.task.error(func+" [FAIL]: unable to create "+child_elems+" child elements");
@@ -597,7 +588,7 @@
 		this.global_id = "Element>"+this.name;
 		this.log = new core.log.Model(["element", this.name]);
 
-		this.parnt = "";
+		this.parent_container = "";
 		this.roles = [];
 
 		this.html = [];
@@ -641,9 +632,7 @@
 		if (element_not_valid(func, this)) return;
 		//this.task.run_sync("object", this, "update_html");
 		update_html.call(this);
-		// rename 'parnt' to more meaningful variable name
-		var cont_name = this.parnt;
-		this.task.run_async("core", "ui_container", "update_container", [cont_name, this]);
+		this.task.run_async("core", "ui_container", "update_container", this);
 		this.task.result = func+"html updated";
 	}
 	/*
@@ -651,8 +640,8 @@
 	 * context: no
 	 */
 	function element_not_valid(func, elem) {
-		if (!elem || !elem.parnt) {
-			this.task.error(func+"element is not valid;");
+		if (!elem || !elem.parent_container) {
+			elem.task.error(func+"element is not valid;");
 			return true;
 		}
 		return false;
@@ -708,7 +697,7 @@
 		// main parser
 		for (var i =0; i < arr.length; ++i) {
 			if (0 === i) {
-				this.parnt = arr[i];
+				this.parent_container = arr[i];
 				this.html.push(null);
 				continue;
 			}

@@ -737,6 +737,7 @@ header {
   .nav--horizontal > ul, .nav--horizontal > li {
     display: flex; }
   .nav--horizontal a {
+    cursor: pointer;
     display: inline-block; }
 
 .nav--vertical {
@@ -1013,27 +1014,22 @@ input[id*="modal-"] {
 
 .tabs input[type="radio"][name="tabs"]:nth-of-type(1):checked ~ .slide-demo {
   left: 0%;
-  left: calc((100% / 3) * 0); }
+  left: calc((100% / 2) * 0); }
 .tabs input[type="radio"][name="tabs"]:nth-of-type(2):checked ~ .slide-demo {
   left: 33.33333%;
-  left: calc((100% / 3) * 1); }
-.tabs input[type="radio"][name="tabs"]:nth-of-type(3):checked ~ .slide-demo {
-  left: 66.66667%;
-  left: calc((100% / 3) * 2); }
+  left: calc((100% / 2) * 1); }
 
 .slide-demo {
-  width: 33.33333%;
-  width: calc(100% / 3); }
+  width: 50%;
+  width: calc(100% / 2); }
 
 .tab-label-content:nth-of-type(1) .tab-content {
   left: 0%; }
 .tab-label-content:nth-of-type(2) .tab-content {
   left: -100%; }
-.tab-label-content:nth-of-type(3) .tab-content {
-  left: -200%; }
 
 .tab-content {
-  width: 300%; }
+  width: 200%; }
 
 /* Use this mixin and specify the amount of tabs and the tab name */
 .tabs label {
@@ -1064,8 +1060,8 @@ input[id*="modal-"] {
   .tab-label-content .tab-content {
     padding: 10px;
     position: relative;
-    padding: 20px;
-    display: none; }
+	padding: 20px;
+	display: none; }
 
 .card.tabs .tab-label-content:first-of-type label {
   border-top-left-radius: 3px; }
