@@ -5,7 +5,7 @@
 	
 	// create app resources
 	var browser_state;
-	var core_debug = ["ui", "", "", "", "", ""];
+	var core_debug = ["", "", "", "", "", ""];
 	glob.core_debug = core_debug;
 
 	// create app object in container
@@ -299,6 +299,8 @@
 		switch (this.type) {
 			case "single":
 				break;
+			case "table":
+				break;
 			case "named":
 				this.add_element = function(el_id) {
 					return -1;
@@ -417,10 +419,15 @@
 	 */
 	function change(el_ind) {
 		var func = "change(): ";
-		var tmp_node = glob.document.createElement("div");
+		var tmp_node;
+		if ("table" === this.type) {
+			tmp_node = glob.document.createElement("table");
+		} else {
+			tmp_node = glob.document.createElement("div");
+		}
 		tmp_node.innerHTML = this.elems[el_ind].html.join("").replace(/[\n\t]/g, "");
 		if (!tmp_node.firstChild || (tmp_node.firstChild.nodeType !== Node.ELEMENT_NODE)) {
-			this.task.error("unable to create new element: not valid string ="+this.elems[el_ind]);
+			this.task.error("unable to create new element: not valid string ="+this.elems[el_ind].html.join("").replace(/[\n\t]/g, ""));
 			return;
 		}
 		tmp_node.firstChild.setAttribute("yaf_id", this.elems[el_ind].global_id);
@@ -450,6 +457,9 @@
 		// TODO single is another
 		if ("single" === this.type) {
 			el_ind = 0;
+		}
+		if ("table" === this.type) {
+			++el_ind;
 		}
 		if (el_ind === childrens) {
 			parent_element.appendChild(new_el);
@@ -498,7 +508,11 @@
 			if (this.loaded[i]) {
 				show.call(this, i);
 			} else {
-				parent_element.appendChild(glob.document.createElement("div"));
+				if ("table" === this.type) {
+					parent_element.appendChild(glob.document.createElement("tr"));
+				} else {
+					parent_element.appendChild(glob.document.createElement("div"));
+				}
 			}
 		}
 		this.task.result = this.name+": children.length = "+parent_element.children.length;
@@ -1023,7 +1037,10 @@
 	function Model_init() {
 		this.Model = Model;
 	}
-
+	/*
+	 * purpose: to provide common for all data models interfaces and services
+	 * context: new object with id and name fields already set
+	 */
 	function Model() {
 		var func = "Model(): ";
 		if (!this.name || typeof this.name !== "string") {
@@ -1127,12 +1144,14 @@
 		// TODO update element naming
 		var name = el.name.split("_").slice(1).join("_");
 		this.ui[name] = el;
+		var incode_id = "var id='"+this.id+"';";
 		// update actions
 		if (this.actions[name] && (0 < this.actions[name].length)) {
-			var actions = this.actions[name];
-			for (var i = 0; i < actions.length; ++i) {
-				this.ui[name].action = actions[i];
-				this.task.debug(func+"ui["+name+"] action <"+actions[i][0]+"> created");
+			for (var i = 0; i < this.actions[name].length; ++i) {
+				var new_action = this.actions[name][i].slice();
+				new_action[1] = incode_id+new_action[1];
+				this.ui[name].action = new_action;
+				this.task.debug(func+"ui["+name+"] action <"+new_action+"> created");
 			}
 		}
 		// update attributes
@@ -1270,11 +1289,17 @@
 			}
 			// create in-module task data storage to avoid suppling it throw arguments later
 			this.task = new Task(this.global_id, interface_name);
-			if (parent_task) {
-				this.task.p_task.push(parent_task);
+			if (parent_task && (parent_task instanceof Task)) {
+				while (parent_task.p_task.length) {
+					this.task.p_task.push(parent_task.p_task.shift());
+				}
+				this.task.p_task.push(parent_task.id);
+				while (parent_task.length) {
+					this.task.debug_log.push(parent_task.debug_log.shift());
+				}
 			}
 			// debug input data
-			this.task.debug("[RUN]: {"+this.task.name+"}: data ="+JSON.stringify(data)+";");
+			this.task.debug("[RUN]: {"+this.task.name+"}: data ="+JSON.stringify(data, task_filter)+";");
 			method.call(this, data);
 			check_task_result(this.task);
 		};
@@ -1289,19 +1314,19 @@
 
 		switch (type) {
 			case "object":
-				module[task_name](data, this.id);
+				module[task_name](data, this);
 				break;
 			case "core":
-				core[module][task_name](data, this.id);
+				core[module][task_name](data, this);
 				break;
 			case "model":
-				glob.app[module][task_name](data, this.id);
+				glob.app[module][task_name](data, this);
 				break;
 		}
 	};
 	/*
 	* purpose: to run subtask in async manner, which means that subtask execution
-	* ->be suspended until current task ends
+	* ->will be suspended until current task ends
 	*/
 	Task.prototype.run_async = function(type, module, task_name, data) {
 		// early exit
@@ -1309,13 +1334,13 @@
 
 		switch (type) {
 			case "object":
-				glob.setTimeout(module[task_name].bind(module), 0, data, this.id);
+				glob.setTimeout(module[task_name].bind(module), 0, data, this);
 				break;
 			case "core":
-				glob.setTimeout(core[module][task_name].bind(core[module]), 0, data, this.id);
+				glob.setTimeout(core[module][task_name].bind(core[module]), 0, data, this);
 				break;
 			case "model":
-				glob.setTimeout(glob.app[module][task_name].bind(glob.app[module]), 0, data, this.id);
+				glob.setTimeout(glob.app[module][task_name].bind(glob.app[module]), 0, data, this);
 				break;
 		}
 	};
@@ -1415,6 +1440,15 @@
 			return true;
 		}
 		return false;
+	}
+	/*
+	 * purpose: to use in JSON.stringify to avoid double task print
+	 */
+	function task_filter(key, value) {
+		if (value instanceof Task) {
+			return value.id;
+		}
+		return value;
 	}
 
 	function test() {
@@ -1667,7 +1701,7 @@
 		if (!data || !Array.isArray(data) || 2 > data.length) {
 			var data = ["std", ""];
 		}
-		get_user.bind(this)(data);
+		get_user.call(this, data);
 	}
 	function get_user([name, passw]) {
 		var func = "get_user(): ";
@@ -1688,7 +1722,7 @@
 			this.task.error(func+"passw \""+passw+"\" is not correct");
 			return;
 		}
-		init_new_user.bind(this)(new_user);
+		init_new_user.call(this, new_user);
 	}
 	function init_new_user(new_user) {
 		// set user as current
@@ -1706,7 +1740,7 @@
 		// init data models
 		for (var i = 0; i < current_user.role.models.length; ++i) {
 			var model_name = current_user.role.models[i];
-			this.task.run_sync("model", model_name, "init", current_user);
+			this.task.run_async("model", model_name, "init", current_user);
 		}
 	}
 	function test() {

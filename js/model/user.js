@@ -29,8 +29,28 @@
 			}
 		}
 	};
-	var users_data = {};
-	var instance_ui_data = {};
+	var users_data = {
+		admin: [
+			["0001", "vasil", "123", "admin"],
+			["0002", "petro", "456", "manager"],
+			["0003", "stranger", "17", "manager"]
+		]
+	};
+	var instance_ui_data = {
+		guest: {},
+		manager: {},
+		admin: {
+			ui: ["table_instance"],
+			actions: {
+					/*
+				instance_entry: [
+					["details", "app.project.details(id);"],
+					["update", "app.project.update(id);"]
+				]
+					*/
+			}
+		}
+	};
 
 	var core = glob.app.core;
 	// load module
@@ -66,10 +86,10 @@
 		return instance_ui_data[user.role_name];
 	}
 	function get_model_data(user) {
-		if (!users_data[user.name]) {
+		if (!users_data[user.role_name]) {
 			return [];
 		}
-		return users_data[user.name];
+		return users_data[user.role_name];
 	}
 	function show_users() {
 		this.ui["dash_main"].show = true;
@@ -86,8 +106,12 @@
 		}
 
 		this.id = data[0];
-		this.name = data[1];
+		this.name = "user";		// TODO this is model_name, not the user name
 		core.model.Model.call(this);
+
+		this.attrs.login_name = data[1];
+		this.attrs.password = data[2];
+		this.attrs.role = data[3];
 
 		this.actions = config.actions;
 		this.ui_config = config.ui;

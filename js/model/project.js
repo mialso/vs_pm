@@ -24,7 +24,7 @@
 			ui: ["menu_entry", "dash_main", "templates"],
 			actions: {
 				menu_entry: [
-					["show", "app.project.show();"]
+					["show", "app.project.show(id);"]
 				]
 			}
 		}
@@ -36,8 +36,8 @@
 			ui: ["instance_entry"],
 			actions: {
 				instance_entry: [
-					["details", "app.project.details(this.parentElement);"],
-					["update", "app.project.update(this.name);"]
+					["details", "app.project.details(id);"],
+					["update", "app.project.update(id);"]
 				]
 			}
 		}
@@ -63,7 +63,9 @@
 		this.show = core.task.create(["show", show_projects]);
 
 		this.details = function(data) {
-			console.log("details not implemented yet, data ="+data.attributes.getNamedItem("yaf_id").value);
+			//console.log("details not implemented yet, data ="+data.attributes.getNamedItem("yaf_id").value);
+			console.log("data ="+data);
+			console.log("%o", arguments);
 		}
 		this.update = function() {
 			console.log("update not implemented yet");
@@ -83,7 +85,11 @@
 		return projects_data[user.name];
 	}
 
-	function show_projects() {
+	function show_projects(id) {
+		if (!id || ("model" !== id)) {
+			this.task.error("uknown instance id to show");
+			return;
+		}
 		this.ui["dash_main"].show = true;
 		this.task.run_async("object", this.ui["dash_main"], "update");
 	}

@@ -3,5 +3,14 @@ body_main|admin|
 	<header class="container">
 		<h1 class="dash_header m--1 g--4">user header</h1>
 	</header>
-	<div class="dash">|$body_user_dash>named|</div>
+	<div class="dash">
+		<table class="u-table m--1 g--10 card">
+			<tr class="table-header">
+				<td>Login</td>
+				<td>Password</td>
+				<td>Role</td>
+			</tr>
+			|$body_user_dash_u-table>table|
+		</table>
+	</div>
 </div>
