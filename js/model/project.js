@@ -12,9 +12,9 @@
 	];
 	var projects_data = {
 		vasil: [
-			["0001", "project_1"],
-			["0002", "project_2"],
-			["0003", "project_X"]
+			"0001:project_1",
+			"0002:project_2",
+			"0003:project_X"
 		]
 	};
 	var model_ui = {
@@ -79,10 +79,10 @@
 		return model_ui[user.role_name];
 	}
 	function get_model_config_data(user) {
-		return instance_ui_data[user.role_name];
+		this.instance_config = instance_ui_data[user.role_name];
 	}
 	function get_model_data(user) {
-		return projects_data[user.name];
+		this.instances_data = projects_data[user.name].join("|");
 	}
 
 	function show_projects(id) {

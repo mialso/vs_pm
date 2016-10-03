@@ -81,15 +81,25 @@
 	}
 	function get_model_config_data(user) {
 		if (!instance_ui_data[user.role_name]) {
-			return {};
+			this.instance_config = {};
 		}
-		return instance_ui_data[user.role_name];
+		this.instance_config = instance_ui_data[user.role_name];
 	}
 	function get_model_data(user) {
+		
+		if ("admin" !== user.role_name) {
+			return;
+		}
+		function handler(data) {
+			this.instances_data = data;
+		}
+		this.task.run_async("core", "net", "req_get", ["?users.c", handler.bind(this)]);
+			/*
 		if (!users_data[user.role_name]) {
 			return [];
 		}
 		return users_data[user.role_name];
+			*/
 	}
 	function show_users() {
 		this.ui["dash_main"].show = true;

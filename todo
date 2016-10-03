@@ -3,3 +3,13 @@
 
 	design
 - create design documentation
+
+	models
+- create server data storage
+- create inbrowser data storage
+
+	ui
+- create user alerts
+
+	user 
+- refactor to store users at user model but not in core

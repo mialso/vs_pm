@@ -1069,15 +1069,44 @@
 			this.clean_up = core.task.create(["clean_up", clean_up]);
 			this.init = core.task.create(["init", init_model]);
 			this.ui_ready = core.task.create(["ui_ready", set_model_ui]);
+			this.init_instances = core.task.create(["init_instances", instance_data_ready]);
+
+			var instances = [];
+			var instance_config = null;
+			Object.defineProperty(this, "instances_data", {
+				set: function(data) {
+					instances = data.split("|");
+					if (!instance_config) {
+						return;
+					}
+					this.task.run_async("object", this, "init_instances", [instances, instance_config]);
+				},
+				get: function() {return instances;}
+			});
+			Object.defineProperty(this, "instance_config", {
+				set: function(data) {
+					instance_config = data;
+					if (0 === instances.length) {
+						return;
+					}
+					this.task.run_async("object", this, "init_instances", [instances, instance_config]);
+				},
+				get: function() {return instance_config;}
+			});
 		}
 
 		// to be implemented in real model
-		this.get_model_data = function() {
-			return [];
-		}
-		this.get_model_config_data = function() {
-			return {};
-		}
+		/*
+		 * purpose: to get instances data
+		 */
+		this.get_model_data = function() {}
+		/*
+		 * purpose: to get instances config data to create new models
+		 */
+		this.get_model_config_data = function() {}
+		/*
+		 * purpose: get config data to create model
+		 */
 		this.get_config_data = function() {
 			return {};
 		}
@@ -1103,18 +1132,23 @@
 		this.ui_config = config.ui;
 
 		// get projects data and init models
-		var model_data = this.get_model_data(user);
-		var model_config = this.get_model_config_data(user);
-		for (var i = 0; i < model_data.length; ++i) {
-			this.instances[model_data[i][0]] = new this.Instance(model_data[i], model_config);
-			this.task.run_async("core", "ui", "model", [this.instances[model_data[i][0]].global_id, this.instances[model_data[i][0]].ui_config]);
-		}
-			
+		this.get_model_data(user);
+		this.get_model_config_data(user);
+
 		if (this.ui_config) {
 			this.task.run_async("core", "ui", "model", [this.name, this.ui_config]);
 		}
 	}
-
+	/*
+	 * purpose: to init instances once all data ready
+	 */
+	function instance_data_ready([instances_data, model_config]) {
+		for (var i = 0; i < instances_data.length; ++i) {
+			var model_data = instances_data[i].split(":");
+			this.instances[model_data[0]] = new this.Instance(model_data, model_config);
+			this.task.run_async("core", "ui", "model", [this.instances[model_data[0]].global_id, this.instances[model_data[0]].ui_config]);
+		}
+	}
 	/*
 	 * purpose: to add new element to model instance
 	 */
