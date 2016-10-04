@@ -15,7 +15,10 @@
 			ui: ["login"],
 			actions: {
  				login: [
+						/*
 					["login", "app.core.user.login([u_name.value, u_pass.value]);return false"]
+						*/
+					["login", "app.user.login([u_name.value, u_pass.value]);return false"]
 				]
 			}
 		},
@@ -71,9 +74,36 @@
 		this.get_model_data = get_model_data;
 
 		this.show = core.task.create(["show", show_users]);
+		this.login = core.task.create(["login", login]);
 	}
 	User_model.prototype = Object.create(core.model.Model.prototype);
 	User_model.prototype.constructor = User_model;
+
+	function login(data) {
+		var func = "login(): ";
+		this.task.debug(func+"data ="+JSON.stringify(data));
+
+		if (!data || !Array.isArray(data) || 2 !== data.length) {
+			this.task.error(func+"data is not valid;");
+			return;
+		}
+		get_user.call(this, data);
+	}
+	function get_user(data) {
+		// create handler
+		function handler(user_data) {
+			if ("epic_fail" === user_data) {
+				// error - no such user found TODO: inform user
+				return;
+			}
+			var user = user_data.split(":");
+			this.task.run_async("core", "user", "init_user", user);
+		}
+		
+		// perform request
+		this.task.run_async("core", "net", "req_post", ["?users.c", handler.bind(this), data]);
+	}
+
 
 	function get_config_data(user) {
 		var data = model_ui[user.role_name];
@@ -86,7 +116,6 @@
 		this.instance_config = instance_ui_data[user.role_name];
 	}
 	function get_model_data(user) {
-		
 		if ("admin" !== user.role_name) {
 			return;
 		}
@@ -94,13 +123,8 @@
 			this.instances_data = data;
 		}
 		this.task.run_async("core", "net", "req_get", ["?users.c", handler.bind(this)]);
-			/*
-		if (!users_data[user.role_name]) {
-			return [];
-		}
-		return users_data[user.role_name];
-			*/
 	}
+
 	function show_users() {
 		this.ui["dash_main"].show = true;
 		this.task.run_async("object", this.ui["dash_main"], "update");
