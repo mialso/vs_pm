@@ -15,6 +15,10 @@
 			"0001:project_1",
 			"0002:project_2",
 			"0003:project_X"
+		],
+		super: [
+			"0004:project_43",
+			"0005:project_84"
 		]
 	};
 	var model_ui = {

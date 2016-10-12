@@ -421,7 +421,8 @@
 		var func = "change(): ";
 		var tmp_node;
 		if ("table" === this.type) {
-			tmp_node = glob.document.createElement("table");
+			//tmp_node = glob.document.createElement("table");
+			tmp_node = glob.document.createElement("tbody");
 		} else {
 			tmp_node = glob.document.createElement("div");
 		}
@@ -459,7 +460,10 @@
 			el_ind = 0;
 		}
 		if ("table" === this.type) {
+				/*
 			++el_ind;
+			++el_ind;
+				*/
 		}
 		if (el_ind === childrens) {
 			parent_element.appendChild(new_el);
@@ -1070,26 +1074,30 @@
 			this.init = core.task.create(["init", init_model]);
 			this.ui_ready = core.task.create(["ui_ready", set_model_ui]);
 			this.init_instances = core.task.create(["init_instances", instance_data_ready]);
+			this.add_instance = core.task.create(["add_instance", add_instance]);
 
-			var instances = [];
+			var instances_arr = [];
 			var instance_config = null;
 			Object.defineProperty(this, "instances_data", {
 				set: function(data) {
-					instances = data.split("|");
+					var arr = data.split("|");
+					for (var i = 0; i < arr.length; ++i) {
+						if (3 < arr[i].length) instances_arr.push(arr[i]);
+					}
 					if (!instance_config) {
 						return;
 					}
-					this.task.run_async("object", this, "init_instances", [instances, instance_config]);
+					this.task.run_async("object", this, "init_instances", [instances_arr, instance_config]);
 				},
-				get: function() {return instances;}
+				get: function() {return instances_arr;}
 			});
 			Object.defineProperty(this, "instance_config", {
 				set: function(data) {
 					instance_config = data;
-					if (0 === instances.length) {
+					if (0 === instances_arr.length) {
 						return;
 					}
-					this.task.run_async("object", this, "init_instances", [instances, instance_config]);
+					this.task.run_async("object", this, "init_instances", [instances_arr, instance_config]);
 				},
 				get: function() {return instance_config;}
 			});
@@ -1145,9 +1153,21 @@
 	function instance_data_ready([instances_data, model_config]) {
 		for (var i = 0; i < instances_data.length; ++i) {
 			var model_data = instances_data[i].split(":");
+			this.task.run_async("object", this, "add_instance", model_data);
+				/*
 			this.instances[model_data[0]] = new this.Instance(model_data, model_config);
 			this.task.run_async("core", "ui", "model", [this.instances[model_data[0]].global_id, this.instances[model_data[0]].ui_config]);
+				*/
 		}
+	}
+	function add_instance(model_data) {
+		var model_config = this.instance_config;
+		if (!model_config) {
+			this.task.error("add_instance(): no instance config");
+			return;
+		}
+		this.instances[model_data[0]] = new this.Instance(model_data, model_config);
+		this.task.run_async("core", "ui", "model", [this.instances[model_data[0]].global_id, this.instances[model_data[0]].ui_config]);
 	}
 	/*
 	 * purpose: to add new element to model instance
@@ -1250,7 +1270,14 @@
 		}
 
 	    req.open(method, uri);
-		data ? req.send(data) : req.send();
+		if (data) {
+				console.log("POST req data =%s", data);
+			var blob = new Blob([data], {type: "text"});
+			req.send(blob);
+		} else {
+			req.send();
+		}
+		//data ? req.send(data) : req.send();
 
 	    req.onreadystatechange = (function() {
 	        if (req.readyState === XMLHttpRequest.DONE) {
@@ -1669,17 +1696,18 @@
 		test
 	];
 	// create app resources
-	var roles = {
-		guest: {
+	var role_names = ["guest", "manager", "admin"];
+	var roles = [
+		{	// guest
 			models: ["user", "app"]
 		},
-		manager: {
+		{	// manager
 			models: ["app", "user", "project"]
 		},
-		admin: {
+		{ 	// admin
 			models: ["user", "project", "app"]
 		}
-	};
+	];
 		/*
 	var users = {
 		vasil: {
@@ -1768,22 +1796,29 @@
 			console.log("DDDDD: guest")
 			var new_user_data = [];
 			new_user_data[1] = guest.name;
-			new_user_data[3] = guest.role;
+			new_user_data[3] = 0;
 				/*
 			new_user_data[2] = guest.passw;
 				*/
 		}
 		// validate role
+		if (new_user_data[3] > roles.length) {
+			this.task.error(func+"role \""+new_user_data[1]+"\" does not exist");
+			console.log("DDDDD: ERRR")
+			return;
+		}
+			/*
 		var role_names = Object.keys(roles);
 		if (-1 === role_names.indexOf(new_user_data[3])) {
 			this.task.error(func+"role \""+new_user_data[1]+"\" does not exist");
 			console.log("DDDDD: ERRR")
 			return;
 		}
+			*/
 		// set user as current
 		current_user.name = new_user_data[1];
 		current_user.role = roles[new_user_data[3]];
-		current_user.role_name = new_user_data[3];
+		current_user.role_name = role_names[new_user_data[3]];
 
 		// clean up
 		for (var i =0; i < current_user.role.models.length; ++i) {

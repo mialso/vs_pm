@@ -24,14 +24,23 @@
 		},
 		manager: {},
 		admin: {
-			ui: ["menu_entry", "dash_main"],
+			ui: ["menu_entry", "dash_main", "data_card"],
 			actions: {
 				menu_entry: [
 					["show", "app.user.show();"]
+				],
+				dash_main: [
+					//["add_new_user", "app.user.add_new_user()"]
+				],
+				data_card: [
+					["update_user", "app.user.add_new_user([u_name.value, u_key.value, u_role.value]);modal_1.checked=false;return false;"]
 				]
 			}
 		}
 	};
+	// TODO move role to standalone model
+	var role_names = ["guest", "manager", "admin"];
+		/*
 	var users_data = {
 		admin: [
 			["0001", "vasil", "123", "admin"],
@@ -39,18 +48,16 @@
 			["0003", "stranger", "17", "manager"]
 		]
 	};
+		*/
 	var instance_ui_data = {
 		guest: {},
 		manager: {},
 		admin: {
 			ui: ["table_instance"],
 			actions: {
-					/*
-				instance_entry: [
-					["details", "app.project.details(id);"],
-					["update", "app.project.update(id);"]
+				table_instance: [
+					["update", "app.user.update(id);"]
 				]
-					*/
 			}
 		}
 	};
@@ -75,6 +82,17 @@
 
 		this.show = core.task.create(["show", show_users]);
 		this.login = core.task.create(["login", login]);
+
+		this.update = function(data) {
+			console.log("user update: data = %s", data);
+		}
+		this.add_new_user = core.task.create(["add_new_user", add_new_user]);
+				/*
+		this.add_new_user = function(data) {
+			console.log("add new user: [%s:%s:%s]", data[0], data[1], data[2]);
+			//glob.document.getElementById("modal-1").checked = false;
+		}
+				*/
 	}
 	User_model.prototype = Object.create(core.model.Model.prototype);
 	User_model.prototype.constructor = User_model;
@@ -93,15 +111,16 @@
 		// create handler
 		function handler(user_data) {
 			if ("epic_fail" === user_data) {
-				// error - no such user found TODO: inform user
+				this.task.error("get_user(): handler(): data ="+user_data+";");
 				return;
 			}
-			var user = user_data.split(":");
+			var user = user_data.slice(1).split(":");
+			console.log("DDDUUU: %o", user);
 			this.task.run_async("core", "user", "init_user", user);
 		}
 		
 		// perform request
-		this.task.run_async("core", "net", "req_post", ["?users.c", handler.bind(this), data]);
+		this.task.run_async("core", "net", "req_get", ["?users/name="+data[0]+"/key="+data[1], handler.bind(this)]);
 	}
 
 
@@ -122,12 +141,25 @@
 		function handler(data) {
 			this.instances_data = data;
 		}
-		this.task.run_async("core", "net", "req_get", ["?users.c", handler.bind(this)]);
+		this.task.run_async("core", "net", "req_get", ["?users/name=all", handler.bind(this)]);
 	}
 
 	function show_users() {
 		this.ui["dash_main"].show = true;
 		this.task.run_async("object", this.ui["dash_main"], "update");
+	}
+	function add_new_user(data) {
+
+		var user_data = data[0]+","+data[1]+","+data[2];
+		function handler(data) {
+				console.log("add_User_handler, data =%s;%s", data, data[0]);
+			if ("|" !== data[0]) {
+				this.task.error("add_new_user(): handler(): server reported error ="+data);
+				return;
+			}
+			this.add_instance(data.slice(1).split(":"));
+		}
+		this.task.run_async("core", "net", "req_post", ["?users/", handler.bind(this), user_data]);
 	}
 
 	function User(data, config) {
@@ -145,7 +177,7 @@
 
 		this.attrs.login_name = data[1];
 		this.attrs.password = data[2];
-		this.attrs.role = data[3];
+		this.attrs.role = role_names[data[3]];
 
 		this.actions = config.actions;
 		this.ui_config = config.ui;

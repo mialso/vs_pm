@@ -65,12 +65,16 @@
 		this.show_wiki = core.task.create(["show_wiki", show_wiki]);
 		this.show_settings = core.task.create(["show_settings", show_settings]);
 
+		this.attrs.user_name = "err_name";
+		this.attrs.role_name = "err_role";
 	}
 	App_model.prototype = Object.create(core.model.Model.prototype);
 	App_model.prototype.constructor = App_model;
 
 	function get_config_data(user) {
 		var data = model_ui[user.role_name];
+		this.attrs.user_name = user.name;
+		this.attrs.role_name = user.role_name;
 		return data;
 	}
 

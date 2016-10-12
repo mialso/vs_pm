@@ -4,7 +4,8 @@ body|manager, admin|
 	<label for="nav--super-vertical-responsive">MENU</label>
 	<aside class="nav--super-vertical g--2 m no-margin-vertical">
 		<div class="g--12 logo-area no-margin-vertical">
-			<p>logo</p>
+			<p>|@user_name|</p>
+			<p>:|@role_name|</p>
 		</div>
 		<nav class="menu g--12 no-margin-vertical">|$body_menu>named:user_menu_entry,project_menu_entry,app_menu_entry|</nav>
 		<button class="btn--primary" style="width:100%;position:absolute;bottom:10px;" onclick="|#logout|">exit</button>

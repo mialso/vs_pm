@@ -1,16 +1,30 @@
 body_main|admin|
 <div class="user g--12 no-margin-vertical ">
-	<header class="container">
+	<header class="container--baseline">
 		<h1 class="dash_header m--1 g--4">user header</h1>
+		<nav class="m--4 g--3 nav--horizontal">
+			<input id="modal_1" type="checkbox"></input>
+			<label for="modal_1"><a>add new user</a></label>
+			<div class="u-modal modal-content"><p>user update modal</p>|$body_user_u-modal>single:user_data_card|</div>
+		</nav>
 	</header>
 	<div class="dash">
-		<table class="u-table m--1 g--10 card">
-			<tr class="table-header">
+		<table class="m--1 g--10 card">
+			<colgroup>
+				<col span="1" style="width:35%;">
+				<col span="1" style="width:35%;">
+				<col span="1" style="width:20%;">
+				<col span="1" style="width:10%;">
+			</colgroup>
+			<thead class="table-header">
 				<td>Login</td>
 				<td>Password</td>
 				<td>Role</td>
-			</tr>
+				<td></td>
+			</thead>
+			<tbody class="u-table">
 			|$body_user_dash_u-table>table|
+			</tbody>
 		</table>
 	</div>
 </div>
