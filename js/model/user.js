@@ -110,15 +110,13 @@
 	function get_user(data) {
 		// create handler
 		function handler(user_data) {
-			if ("epic_fail" === user_data) {
-				this.task.error("get_user(): handler(): data ="+user_data+";");
+			if ("|" !== user_data[0]) {
+				this.task.error("get_user(): handler(): server data not valid ="+user_data+";");
 				return;
 			}
 			var user = user_data.slice(1).split(":");
-			console.log("DDDUUU: %o", user);
 			this.task.run_async("core", "user", "init_user", user);
 		}
-		
 		// perform request
 		this.task.run_async("core", "net", "req_get", ["?users/name="+data[0]+"/key="+data[1], handler.bind(this)]);
 	}
@@ -130,16 +128,24 @@
 	}
 	function get_model_config_data(user) {
 		if (!instance_ui_data[user.role_name]) {
-			this.instance_config = {};
+			this.task.error("get_model_config_data(): no instance config available for user.role_name ["+user.role_name+"]");
+			return;
 		}
-		this.instance_config = instance_ui_data[user.role_name];
+		this.task.run_async("object", this, "add_instance_config", instance_ui_data[user.role_name]);
 	}
 	function get_model_data(user) {
 		if ("admin" !== user.role_name) {
 			return;
 		}
 		function handler(data) {
-			this.instances_data = data;
+			if ("|" !== data[0]) {
+				this.task.error("get_model_data(): handler(): server data not valid ="+data+";");
+				return;
+			}
+			var instances = data.slice(1).split("|");
+			for (var i = 0; i < instances.length; ++i) {
+				this.task.run_async("object", this, "add_instance", instances[i].split(":"));
+			}
 		}
 		this.task.run_async("core", "net", "req_get", ["?users/name=all", handler.bind(this)]);
 	}

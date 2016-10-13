@@ -1070,37 +1070,15 @@
 		// only model model interface
 		if ("model" === this.id) {
 			this.instances = {};
+			this.instances_data = [];
+			this.instance_config = null;
+
 			this.clean_up = core.task.create(["clean_up", clean_up]);
 			this.init = core.task.create(["init", init_model]);
 			this.ui_ready = core.task.create(["ui_ready", set_model_ui]);
-			this.init_instances = core.task.create(["init_instances", instance_data_ready]);
-			this.add_instance = core.task.create(["add_instance", add_instance]);
 
-			var instances_arr = [];
-			var instance_config = null;
-			Object.defineProperty(this, "instances_data", {
-				set: function(data) {
-					var arr = data.split("|");
-					for (var i = 0; i < arr.length; ++i) {
-						if (3 < arr[i].length) instances_arr.push(arr[i]);
-					}
-					if (!instance_config) {
-						return;
-					}
-					this.task.run_async("object", this, "init_instances", [instances_arr, instance_config]);
-				},
-				get: function() {return instances_arr;}
-			});
-			Object.defineProperty(this, "instance_config", {
-				set: function(data) {
-					instance_config = data;
-					if (0 === instances_arr.length) {
-						return;
-					}
-					this.task.run_async("object", this, "init_instances", [instances_arr, instance_config]);
-				},
-				get: function() {return instance_config;}
-			});
+			this.add_instance = core.task.create(["add_instance", add_instance]);
+			this.add_instance_config = core.task.create(["add_instance_config", add_instance_config]);
 		}
 
 		// to be implemented in real model
@@ -1124,6 +1102,7 @@
 	}
 	function clean_up() {
 		this.instances = {};
+		this.instances_data = [];
 		this.ui = {};
 	}
 
@@ -1148,25 +1127,33 @@
 		}
 	}
 	/*
-	 * purpose: to init instances once all data ready
+	 * purpose: to add instance config and check if any instances data is ready
+	 * + to be initialized. Run add_instance in case of instance data present.
 	 */
-	function instance_data_ready([instances_data, model_config]) {
-		for (var i = 0; i < instances_data.length; ++i) {
-			var model_data = instances_data[i].split(":");
-			this.task.run_async("object", this, "add_instance", model_data);
-				/*
-			this.instances[model_data[0]] = new this.Instance(model_data, model_config);
-			this.task.run_async("core", "ui", "model", [this.instances[model_data[0]].global_id, this.instances[model_data[0]].ui_config]);
-				*/
-		}
-	}
-	function add_instance(model_data) {
-		var model_config = this.instance_config;
-		if (!model_config) {
-			this.task.error("add_instance(): no instance config");
+	function add_instance_config(data) {
+		var func = "add_instance_config(): ";
+		// TODO validate 
+		this.instance_config = data;
+		if (0 === this.instances_data.length) {
 			return;
 		}
-		this.instances[model_data[0]] = new this.Instance(model_data, model_config);
+		for (var i = 0; i < this.instances_data.length; ++i) {
+			this.task.run_async("object", this, "add_instance", this.instances_data[i]);
+		}
+	}
+	/*
+	 * purpose: to add instance
+	 * context: instance Model
+	 */
+	function add_instance(model_data) {
+		var func = "add_instance(): ";
+		if (!this.instance_config) {
+			this.instances_data.push(model_data);
+			// TODO this is task result
+			this.task.debug(func+"new model data pushed to instances_data");
+			return;
+		}
+		this.instances[model_data[0]] = new this.Instance(model_data, this.instance_config);
 		this.task.run_async("core", "ui", "model", [this.instances[model_data[0]].global_id, this.instances[model_data[0]].ui_config]);
 	}
 	/*
@@ -1175,9 +1162,9 @@
 	function set_model_ui(element) {
 		var func = "set_model_ui(): ";
 		if (!element) {
-			this.task.debug(func+"element <"+element+"> is not valid;");
+			this.task.error(func+"element <"+element+"> is not valid;");
+			return;
 		}
-		//if (undefined !== element.model.id && null !== element.model.id) {		
 		if ("model" === element.model.id) {		
 			this.task.run_async("object", this, "set_ui", element);
 		} else {

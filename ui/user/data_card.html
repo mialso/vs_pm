@@ -3,10 +3,16 @@ body_user_u-modal|admin|
 	<form class="g-12" onsubmit="|#update_user|">
 		<input name="u_name" type="text" required placeholder="new user name">
 		<input name="u_key" type="text" required placeholder="new user key">
+		<div class="select" style="width:100%">
+				<!--
 		<select class="center" style="display:block;margin:auto;" name="u_role">
+-->
+		<select style="width:100%" name="u_role">
 			<option value="1">Manager</option>
 			<option value="2">Admin</option>
 		</select>
+		<div class="select__arrow"></div>
+		</div>
 		<button type="submit" class="g--12 btn--flat btn--secondary" style="width:100%;">add user</button>
 	</form>
 </div>

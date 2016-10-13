@@ -83,10 +83,17 @@
 		return model_ui[user.role_name];
 	}
 	function get_model_config_data(user) {
-		this.instance_config = instance_ui_data[user.role_name];
+		if (!instance_ui_data[user.role_name]) {
+			this.task.error("get_model_config_data(): no instance config available for user.role_name ["+user.role_name+"]");
+			return;
+		}
+		this.task.run_async("object", this, "add_instance_config", instance_ui_data[user.role_name]);
 	}
 	function get_model_data(user) {
-		this.instances_data = projects_data[user.name].join("|");
+		var instances = projects_data[user.name];
+		for (var i = 0; i < instances.length; ++i) {
+			this.task.run_async("object", this, "add_instance", instances[i].split(":"));
+		}
 	}
 
 	function show_projects(id) {

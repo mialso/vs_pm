@@ -1,0 +1,86 @@
+.u-table-tr:hover {
+	cursor: pointer;
+}
+.u-table-tr:hover p {
+	visibility: visible;
+}
+.u-table-tr .tr-edit {
+	visibility: hidden;
+}
+.u-table-tr input {
+  /* Eliminate borders and padding */
+display: none;
+border: none;
+padding: 0;
+margin: 0;
+background: none;
+cursor: inherit;
+
+/* Inherit the parent element's typography */
+font: inherit;
+color: inherit;
+line-height: inherit;
+font-size: inherit;
+text-align: inherit;
+
+/* Seems to help alignment in headers */
+vertical-align: top;
+}
+
+.u-table-tr:hover input {
+	background: #fafafa;
+}
+
+.select {
+	position: relative;
+	display: inline-block;
+	width: 100%;
+	margin-bottom: 15px;
+}
+
+.select select {
+	display: inline-block;
+	width: 100%;
+	padding: 10px 15px;
+	cursor: pointer;
+	color: #7b7b7b;
+	border: 0;
+	border-radius: 0;
+	outline: 0;
+	background: #e6e6e6;
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+}
+
+.select select::-ms-expand {
+	display: none;
+}
+.select select:hover,
+.select select:focus {
+	color: #000;
+	background: #ccc;
+}
+.select select:disabled {
+	pointer-events: none;
+	opacity: .5;
+}
+.select__arrow {
+position: absolute;
+	top: 16px;
+	right: 15px;
+	width: 0;
+	height: 0;
+	pointer-events: none;
+	border-width: 8px 5px 0 5px;
+	border-style: solid;
+	border-color: #7b7b7b transparent transparent transparent;
+}
+.select select:hover ~ .select__arrow,
+.select select:focus ~ .select__arrow {
+	border-top-color: #000;
+}
+
+.select select:disabled ~ .select__arrow {
+	border-top-color: #ccc;
+}
