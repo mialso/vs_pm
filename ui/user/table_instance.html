@@ -1,7 +1,16 @@
 body_user_dash_u-table|admin|
 <tr class="u-table-tr" onclick="|#update|">
-		<td><input name="u_name"></input><p class="td-edit" style="margin-bottom:0;">|@login_name|</p></td>
-	<td>|@password|</td>
-	<td>|@role|</td>
-	<td><p class="tr-edit" style="margin-bottom:0;">edit it</p></td>
+	<td><input class="u_input" name="name" placeholder="|@login_name|" type="text"></input><p>|@login_name|</p></td>
+	<td><input class="u_input" name="key" placeholder="|@password|" type="text"></input><p>|@password|</p></td>
+	<td>
+		<div class="select">
+		<select class="u_input" name="role_id">
+			<option selected disabled value="|@role_id|">|@role|</option>
+			<option value="1">Manager</option>
+			<option value="2">Admin</option>
+		</select>
+		<div class="select__arrow"></div>
+		</div>
+		<p>|@role|</p></td>
+	<td><button class="btn--flat" type="button" onclick="|#save_update|">save</button><p class="tr-edit" style="margin-bottom:0;">edit it</p></td>
 </tr>

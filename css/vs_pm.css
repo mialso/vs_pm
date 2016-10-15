@@ -1,34 +1,65 @@
 .u-table-tr:hover {
 	cursor: pointer;
 }
-.u-table-tr:hover p {
+.u-table-tr:hover .tr-edit {
 	visibility: visible;
 }
 .u-table-tr .tr-edit {
 	visibility: hidden;
 }
+.u-table-tr td * {
+	margin-bottom: 0px;
+}
+.u-table-tr button {
+	display: none;
+}
+.u-table-tr.edit button {
+	display: inline-block;
+}
+.u-table-tr.edit {
+	position: relative;
+	z-index: 10;
+    background: rgba(200, 200, 0, 0.3);
+}
+.u-table-tr.edit:hover {
+    background: rgba(200, 200, 0, 0.1);
+}
+.u-table-tr.edit input {
+	display: inline-block;
+}
+.u-table-tr.edit div {
+	display: inline-block;
+	}
+	.u-table-tr.edit div.select {
+		width: 80%;
+	}
+.u-table-tr.edit p {
+	display: none;
+}
 .u-table-tr input {
-  /* Eliminate borders and padding */
-display: none;
-border: none;
-padding: 0;
-margin: 0;
-background: none;
-cursor: inherit;
-
-/* Inherit the parent element's typography */
-font: inherit;
-color: inherit;
-line-height: inherit;
-font-size: inherit;
-text-align: inherit;
-
-/* Seems to help alignment in headers */
-vertical-align: top;
+	display: none;
+}
+.u-table-tr p {
+	display: inline;
+}
+.u-table-tr div {
+	display: none;
 }
 
-.u-table-tr:hover input {
-	background: #fafafa;
+.table_edit_check {
+	display: none;
+}
+.table_edit_check.edit {
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	z-index: 9;
+}
+.table_edit_check.edit:hover {
+    background: rgba(0, 0, 0, 0.1);
+	cursor: alias;
 }
 
 .select {
@@ -39,7 +70,7 @@ vertical-align: top;
 }
 
 .select select {
-	display: inline-block;
+	display: block;
 	width: 100%;
 	padding: 10px 15px;
 	cursor: pointer;
@@ -84,3 +115,63 @@ position: absolute;
 .select select:disabled ~ .select__arrow {
 	border-top-color: #ccc;
 }
+	  /*
+input[id*="table_"] {
+  display: none; }
+  input[id*="table_"]:checked + label {
+    outline: none;
+    background-size: 1000%;
+    transition: all 1s cubic-bezier(0.64, 0.09, 0.08, 1); }
+    input[id*="table_"]:checked + label:before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      transition: all 0.3s cubic-bezier(0.64, 0.09, 0.08, 1);
+      z-index: 9; }
+  input[id*="table_"]:checked ~ .table-instance-content {
+    transition: opacity 0.3s cubic-bezier(0.64, 0.09, 0.08, 1);
+    opacity: 1;
+    display: block;
+    height: auto;
+    width: auto;
+    padding: 40px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10; }
+    input[id*="table_"]:checked ~ .table-instance-content * {
+      height: auto;
+      width: auto; }
+	  */
+
+		/*
+.modal-trigger {
+  white-space: pre;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.64, 0.09, 0.08, 1);
+  padding: 10px 20px;
+  background-size: 1%;
+  background-repeat: no-repeat;
+  background-position: 50% 50%; }
+  .modal-trigger:after {
+    white-space: nowrap;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.64, 0.09, 0.08, 1);
+    background-image: none; }
+
+.modal-content {
+  position: fixed;
+  opacity: 0;
+  height: 0;
+  background: white;
+  border-radius: 3px; }
+  .modal-content * {
+    width: 0;
+    height: 0; }
+
+	*/

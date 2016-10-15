@@ -31,6 +31,7 @@
 				],
 				dash_main: [
 					//["add_new_user", "app.user.add_new_user()"]
+					["stop_edit", "app.user.stop_edit(event, id)"]
 				],
 				data_card: [
 					["update_user", "app.user.add_new_user([u_name.value, u_key.value, u_role.value]);modal_1.checked=false;return false;"]
@@ -40,15 +41,6 @@
 	};
 	// TODO move role to standalone model
 	var role_names = ["guest", "manager", "admin"];
-		/*
-	var users_data = {
-		admin: [
-			["0001", "vasil", "123", "admin"],
-			["0002", "petro", "456", "manager"],
-			["0003", "stranger", "17", "manager"]
-		]
-	};
-		*/
 	var instance_ui_data = {
 		guest: {},
 		manager: {},
@@ -56,16 +48,22 @@
 			ui: ["table_instance"],
 			actions: {
 				table_instance: [
-					["update", "app.user.update(id);"]
+					["update", "app.user.update(event, id);"],
+					["save_update", "app.user.save_user([event, id]);"]
 				]
 			}
 		}
 	};
+	var user_attrs_names = ["name", "key", "role_id"];
 
 	var core = glob.app.core;
 	// load module
 	var log = new core.Logger("module-user");
 	core.data_loader.module = module_data;
+
+	var user_edit_element = null;
+	var edit_check_elem = null;
+	var tmp_click = null;
 
 	function User_model() {
 		this.name = module_data[0];
@@ -83,20 +81,111 @@
 		this.show = core.task.create(["show", show_users]);
 		this.login = core.task.create(["login", login]);
 
-		this.update = function(data) {
-			console.log("user update: data = %s", data);
-		}
+		this.update = core.task.create(["update", update_user]);
+		this.stop_edit = core.task.create(["stop_edit", stop_edit_user]);
+		this.save_user = core.task.create(["save_user", save_user]);
 		this.add_new_user = core.task.create(["add_new_user", add_new_user]);
-				/*
-		this.add_new_user = function(data) {
-			console.log("add new user: [%s:%s:%s]", data[0], data[1], data[2]);
-			//glob.document.getElementById("modal-1").checked = false;
-		}
-				*/
 	}
 	User_model.prototype = Object.create(core.model.Model.prototype);
 	User_model.prototype.constructor = User_model;
 
+	function save_user([event, id]) {
+		var yaf_element = glob.document.querySelector("[yaf_id=\""+user_edit_element+"\"]");
+		if (!yaf_element) {
+			this.task.error("no yaf_element found");
+			return;
+		}
+		var inputs = yaf_element.querySelectorAll(".u_input");
+		var user_data_updated = [];
+		for (var i=0; i < inputs.length; ++i) {
+			var data_ind = user_attrs_names.indexOf(inputs[i].name);
+			if (-1 !== data_ind) {
+				user_data_updated[data_ind] = inputs[i].value;
+			}
+		}
+		this.task.debug("new user data = "+JSON.stringify(user_data_updated));
+		
+		event.stopPropagation();
+			/*
+		this.task.error("test error");
+		return;
+			*/
+		function handler(data) {
+			if ("|" !== data[0]) {
+				yaf_element.classList.toggle("edit");
+				this.task.error("save_user(): handler(): server data not valid ="+data+";");
+				return;
+			}
+			var new_data = data.slice(1).split(":");
+			var ui_elem = this.instances[id].ui["table_instance"];
+			this.instances[id].attrs.login_name = new_data[1];
+			ui_elem.attr = ["login_name", new_data[1]];
+			this.instances[id].attrs.password = new_data[2];
+			ui_elem.attr = ["password", new_data[2]];
+			this.instances[id].attrs.role = role_names[new_data[3]];
+			ui_elem.attr = ["role", role_names[new_data[3]]];
+			this.instances[id].attrs.role_id = new_data[3];
+			ui_elem.attr = ["role_id", new_data[3]];
+
+			this.task.run_async("object", ui_elem, "update");
+			// TODO refactor - the same as stop edit
+			//yaf_element.classList.toggle("edit");
+			//yaf_element.onclick = tmp_click;
+			this.task.result = "user update [OK]";
+		}
+		var updated_user_data = user_data_updated.join(",");
+		// perform request
+		this.task.run_async("core", "net", "req_put", ["?users", handler.bind(this), updated_user_data]);
+		glob.document.getElementById("table_edit_check").classList.toggle("edit");
+		tmp_click = null;
+		user_edit_element = null;
+	}
+	function stop_edit_user(event, id) {
+		glob.document.getElementById("table_edit_check").classList.toggle("edit");
+		var yaf_element = glob.document.querySelector("[yaf_id=\""+user_edit_element+"\"]");
+		if (!yaf_element) {
+			return;
+		}
+		yaf_element.classList.toggle("edit");
+		yaf_element.onclick = tmp_click;
+		tmp_click = null;
+		user_edit_element = null;
+		event.stopPropagation();
+			/*
+		var inputs = yaf_element.querySelectorAll("input");
+		for (var i=0; i < inputs.length; ++i) {
+			inputs[i].disabled = true;
+		}
+			*/
+	}
+	function update_user(event, data) {
+		if (user_edit_element) {
+			return;
+		}
+		glob.document.getElementById("table_edit_check").classList.toggle("edit");
+		
+		var body = glob.document.body;
+		var html = glob.document.documentElement;
+		var height = Math.max( body.scrollHeight, body.offsetHeight, 
+				html.clientHeight, html.scrollHeight, html.offsetHeight );
+
+		glob.document.getElementById("table_edit_check").style = "height:"+height+"px;";
+
+		var yaf_element = event.target;
+		while (null === yaf_element.getAttribute("yaf_id")) {
+			yaf_element = yaf_element.parentElement;
+		}
+		yaf_element.classList.toggle("edit");
+		tmp_click = yaf_element.onclick;
+		yaf_element.onclick = function() {};
+		user_edit_element = yaf_element.getAttribute("yaf_id");
+			/*
+		var inputs = yaf_element.querySelectorAll("input");
+		for (var i=0; i < inputs.length; ++i) {
+			inputs[i].disabled = false;
+		}
+			*/
+	}
 	function login(data) {
 		var func = "login(): ";
 		this.task.debug(func+"data ="+JSON.stringify(data));
@@ -154,6 +243,12 @@
 		this.ui["dash_main"].show = true;
 		this.task.run_async("object", this.ui["dash_main"], "update");
 	}
+		/*
+	function hide_user() {
+		this.ui["table_instance"].show = false;
+		this.task.run_async("object", this.ui["table_instance"], "update");
+	}
+		*/
 	function add_new_user(data) {
 
 		var user_data = data[0]+","+data[1]+","+data[2];
@@ -184,6 +279,7 @@
 		this.attrs.login_name = data[1];
 		this.attrs.password = data[2];
 		this.attrs.role = role_names[data[3]];
+		this.attrs.role_id = data[3];
 
 		this.actions = config.actions;
 		this.ui_config = config.ui;

@@ -370,7 +370,12 @@
 	 */
 	function show(elem_ind) {
 		if (this.shown[elem_ind]) {
+			// hide element before it would be shown.... TODO - refactor
 			hide.call(this, elem_ind);
+		}
+		change.call(this, elem_ind);
+		if ("error" === this.task.state) {
+			return;
 		}
 		// if new containers added - call parent ready on each
 		var elem = this.elems[elem_ind];
@@ -384,18 +389,15 @@
 				this.task.run_async("object", containers[name], "parent_ready", true);
 			}
 		}
-		// TODO if change call fails, this should not be true
 		this.shown[elem_ind] = true;
-		this.task.debug(this.elems[elem_ind].global_id+" is shown ="+this.shown[elem_ind]);
-
-		change.call(this, elem_ind);
+		//this.task.debug(this.elems[elem_ind].global_id+" is shown ="+this.shown[elem_ind]);
 	}
 	/*
 	 * purpose: to hide element
 	 * context: Container
 	 */
 	function hide(elem_ind) {
-		this.elems[elem_ind].show = false;
+		//this.elems[elem_ind].show = false;
 		var elem = this.elems[elem_ind];
 		if (0 < elem.containers.length) {
 			for (var i = 0; i < elem.containers.length; ++i) {
@@ -421,7 +423,6 @@
 		var func = "change(): ";
 		var tmp_node;
 		if ("table" === this.type) {
-			//tmp_node = glob.document.createElement("table");
 			tmp_node = glob.document.createElement("tbody");
 		} else {
 			tmp_node = glob.document.createElement("div");
@@ -490,7 +491,9 @@
 		this.task.debug("loaded ="+JSON.stringify(this.loaded));
 		var parent_element = glob.document.querySelector(this.head);
 		if (!parent_element) {
-			this.task.error(func+"parent is not in dom: "+this.head+">"); 
+			this.task.debug(func+"parent is not in dom: "+this.head+">"); 
+			// TODO make the time value dynamic, or, may be refactor the whole logic(((
+			setTimeout(create_children.bind(this, parent_element), 10);
 			return;
 		}
 		// TODO single is another
@@ -502,6 +505,13 @@
 	 */
 	function create_children(parent_element) {
 		var func = "create_children(): ";
+		if (!parent_element) {
+			parent_element = glob.document.querySelector(this.head); 
+			if (!parent_element) {
+				this.task.error(func+"still no parent in dom");
+				return;
+			}
+		}
 		// get the number of elements to be created
 		var child_elems = (this.elem_names.length > this.loaded.length) ? this.elem_names.length : this.loaded.length;
 		if ("single" === this.type) {
@@ -615,6 +625,7 @@
 
 		this.containers = [];
 
+		// TODO check if ui.js does not doubles this data
 		this.ui_path = ui_path+this.model.name+"/"+this.name+ui_ext;
 
 		this.parse_config_string = core.task.create(["parse_config_string", parse_config_string]);
@@ -667,9 +678,11 @@
 	function Attribute(attr_data_arr) {
 		log.info = "Attribute(): new ="+JSON.stringify(attr_data_arr)+";";
 
+		this.inds = [];
 		this.name = attr_data_arr[0];
 		this.data = attr_data_arr[1];
-		this.ind = attr_data_arr[2];
+		//this.ind = attr_data_arr[2];
+		this.inds.push(attr_data_arr[2]);
 		
 		this.update = function(data_arr) {
 			log.info = "Attribute(): \""+this.name+"\" update(): data_arr ="+JSON.stringify(data_arr);
@@ -727,14 +740,11 @@
 			switch (arr[i][0]) {
 				case "@":	// data
 					var attr = arr[i].slice(1);
-/*
 					if (!this.attrs[attr]) {
-						this.attrs[attr] = {};
-						this.attrs[attr].data = null;
+						this.attrs[attr] = new Attribute([attr, null, i]);
+					} else {
+						this.attrs[attr].inds.push(i);
 					}
-					this.attrs[attr].ind = i;
-*/
-					this.attrs[attr] = new Attribute([attr, null, i]);
 					this.html.push(null);
 					break;
 				case "#":	// action
@@ -783,7 +793,10 @@
 			for (var i = 0; i < attr_names.length; ++i) {
 				var attr = this.attrs[attr_names[i]];
 				if (attr.data) {
-					this.html[attr.ind] = attr.data;
+					for (var j=0; j < attr.inds.length; ++j) {
+						this.html[attr.inds[j]] = attr.data;
+					}
+					//this.html[attr.ind] = attr.data;
 				}
 			}
 		}
@@ -1231,16 +1244,20 @@
 
 		this.req_get = core.task.create(["req_get", get_req]);
 		this.req_post = core.task.create(["req_post", post_req]);
+		this.req_put = core.task.create(["req_put", put_req]);
+	}
+	function put_req([uri, handler, data]) {
+		send_request.call(this, "PUT", uri, handler, data);
 	}
 
 	function get_req([uri, handler]) {
 		this.task.debug("get_req(): uri = "+uri+", handler is "+handler+";");
-		send_request.bind(this)("GET", uri, handler, null);
+		send_request.call(this, "GET", uri, handler, null);
 	}
 
 	function post_req([uri, handler, data]) {
 		this.task.debug("post_req(): uri = "+uri+", handler is "+handler+", data = "+data+";");
-		send_request.bind(this)("POST", uri, handler, data);
+		send_request.call(this, "POST", uri, handler, data);
 	}
 	function send_request(method, uri, handler, data) {
 	    var req;
@@ -1258,7 +1275,6 @@
 
 	    req.open(method, uri);
 		if (data) {
-				console.log("POST req data =%s", data);
 			var blob = new Blob([data], {type: "text"});
 			req.send(blob);
 		} else {
@@ -1624,8 +1640,8 @@
 			var el_id = model_data.split(">").shift()+"_"+ui_names[i];
 			var el_name = ui_names[i];
 			var el_path = ui_path+model+"/"+el_name+ui_ext;
-			var el_ind = template_names.indexOf(el_id);
-			if (-1 === el_ind) {
+			var el_t_ind = template_names.indexOf(el_id);
+			if (-1 === el_t_ind) {
 				// early exit if template was already requested
 				if (template_queue.hasOwnProperty(el_id)) {
 					template_queue[el_id].push([model_data, el_name]);
@@ -1637,11 +1653,11 @@
 				this.task.run_async("core", "net", "req_get", [el_path, get_template_handler(model_data, el_name).bind(this)]);
 				continue;
 			}
-			if (!template_storage[el_ind]) {
+			if (!template_storage[el_t_ind]) {
 				this.task.error(func+"template storage for element \""+el_id+"\" is empty;");
 				return;
 			}
-			var el_data = template_storage[el_ind];
+			var el_data = template_storage[el_t_ind];
 			this.task.debug(func+"new model <"+model+"> element \""+el_id);
 			this.task.run_async("core", "ui_element", "create", [model_data, el_name, el_data]);
 		}
