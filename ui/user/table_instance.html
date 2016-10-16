@@ -1,7 +1,7 @@
 body_user_dash_u-table|admin|
 <tr class="u-table-tr" onclick="|#update|">
-	<td><input class="u_input" name="name" placeholder="|@login_name|" type="text"></input><p>|@login_name|</p></td>
-	<td><input class="u_input" name="key" placeholder="|@password|" type="text"></input><p>|@password|</p></td>
+	<td><input disabled="true" class="u_input" name="name" value="|@login_name|" type="text"></input><p>|@login_name|</p></td>
+	<td><input class="u_input" name="key" value="|@password|" type="text"></input><p>|@password|</p></td>
 	<td>
 		<div class="select">
 		<select class="u_input" name="role_id">
@@ -12,5 +12,8 @@ body_user_dash_u-table|admin|
 		<div class="select__arrow"></div>
 		</div>
 		<p>|@role|</p></td>
-	<td><button class="btn--flat" type="button" onclick="|#save_update|">save</button><p class="tr-edit" style="margin-bottom:0;">edit it</p></td>
+	<td>
+		<button class="bt-save btn--flat" type="button" onclick="|#save_update|"></button>
+		<button class="bt-edit btn--flat" type="button" onclick="|#delete_user|"></button>
+	</td>
 </tr>

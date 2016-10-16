@@ -245,9 +245,17 @@
 	function clean_up() {
 		containers = {};
 	}
-	function update_container(elem) {
+	function update_container([elem, remove_element]) {
 		var func = "update_container(): ";
 		var cont_name = elem.parent_container;
+		if (remove_element) {
+			if (!containers[cont_name]) {
+				this.task.error(func+"remove failed: not such container ["+cont_name+"]");
+				return;
+			}
+			this.task.run_sync("object", containers[cont_name], "remove_el", elem);
+			return;
+		}
 		// if container is not loaded yet, put element to queue
 		if (!containers[cont_name]) {
 			// create queue if absent
@@ -284,6 +292,7 @@
 		// interface
 		this.update = core.task.create(["update", update_element]);
 		this.parent_ready = core.task.create(["parent_ready", add_to_parent]);
+		this.remove_el = core.task.create(["remove_el", cont_remove_element]);
 
 		// service static functions, to be used by tasks
 		this.get_elem_id = function(elem) {
@@ -536,6 +545,37 @@
 		}
 */
 	}
+	function cont_remove_element(element) {
+		var el_id = this.get_elem_id(element);
+		if (!el_id) {
+			this.task.error("unable to get el_id");
+			return;
+		}
+		var elem_ind = this.get_elem_index(el_id);
+		if (!elem_ind) {
+			this.task.error("unable to get elem_ind, el_id ="+el_id);
+			return;
+		}
+		var yaf_id = this.elems[elem_ind].global_id;
+		if (!yaf_id) {
+			this.task.error("unable to get yaf_id, elem_ind ="+elem_ind);
+			return;
+		}
+		var dom_el = glob.document.querySelector("[yaf_id=\""+yaf_id+"\"]");
+		if (!dom_el) {
+			this.task.error("unable to get dom element, yaf_id ="+yaf_id);
+			return;
+		}
+		if (dom_el.parentNode) {
+			dom_el.parentNode.removeChild(dom_el);
+		} else {
+			this.task.error("unable to get parent node, dom_el ="+JSON.stringify(gom_el));
+			return;
+		}
+			console.log("EEEEEE "+elem_ind);
+		this.elems.splice(elem_ind, 1);
+		this.elem_names.splice(elem_ind, 1);
+	}
 	/*
 	 * purpose: to check element dependencies
 	 * context: Container
@@ -582,6 +622,7 @@
 		this.global_id = "ui_element>model"
 
 		this.create = core.task.create(["create", create_element]);
+		this.remove = core.task.create(["remove", remove_element]);
 	}
 	/*
 	* purpose: to create new ui element instance
@@ -601,6 +642,13 @@
 
 		// inform appropriate model that element is ready to insert model data
 		this.task.run_async("model", new_element.model.name, "ui_ready", new_element);
+	}
+	function remove_element(element) {
+		this.task.run_sync("core", "ui_container", "update_container", [element, true]);
+		if ("error" === this.task.state) {
+			return;
+		}
+		this.task.result = "element <"+element.global_id+"> removed";
 	}
 	/*
 	 * purpose: to create new Element
@@ -661,7 +709,7 @@
 		if (element_not_valid(func, this)) return;
 		//this.task.run_sync("object", this, "update_html");
 		update_html.call(this);
-		this.task.run_async("core", "ui_container", "update_container", this);
+		this.task.run_async("core", "ui_container", "update_container", [this, false]);
 		this.task.result = func+"html updated";
 	}
 	/*
@@ -1245,9 +1293,14 @@
 		this.req_get = core.task.create(["req_get", get_req]);
 		this.req_post = core.task.create(["req_post", post_req]);
 		this.req_put = core.task.create(["req_put", put_req]);
+		this.req_delete = core.task.create(["req_delete", delete_req]);
 	}
 	function put_req([uri, handler, data]) {
 		send_request.call(this, "PUT", uri, handler, data);
+	}
+
+	function delete_req([uri, handler]) {
+		send_request.call(this, "DELETE", uri, handler, null);
 	}
 
 	function get_req([uri, handler]) {

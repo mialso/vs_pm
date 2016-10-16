@@ -48,8 +48,9 @@
 			ui: ["table_instance"],
 			actions: {
 				table_instance: [
-					["update", "app.user.update(event, id);"],
-					["save_update", "app.user.save_user([event, id]);"]
+					["update", "app.user.update([event, id]);"],
+					["save_update", "app.user.save_user([event, id]);"],
+					["delete_user", "app.user.delete_user([event, id]);"]
 				]
 			}
 		}
@@ -82,6 +83,7 @@
 		this.login = core.task.create(["login", login]);
 
 		this.update = core.task.create(["update", update_user]);
+		this.delete_user = core.task.create(["delete_user", delete_user]);
 		this.stop_edit = core.task.create(["stop_edit", stop_edit_user]);
 		this.save_user = core.task.create(["save_user", save_user]);
 		this.add_new_user = core.task.create(["add_new_user", add_new_user]);
@@ -106,10 +108,6 @@
 		this.task.debug("new user data = "+JSON.stringify(user_data_updated));
 		
 		event.stopPropagation();
-			/*
-		this.task.error("test error");
-		return;
-			*/
 		function handler(data) {
 			if ("|" !== data[0]) {
 				yaf_element.classList.toggle("edit");
@@ -129,8 +127,6 @@
 
 			this.task.run_async("object", ui_elem, "update");
 			// TODO refactor - the same as stop edit
-			//yaf_element.classList.toggle("edit");
-			//yaf_element.onclick = tmp_click;
 			this.task.result = "user update [OK]";
 		}
 		var updated_user_data = user_data_updated.join(",");
@@ -151,14 +147,8 @@
 		tmp_click = null;
 		user_edit_element = null;
 		event.stopPropagation();
-			/*
-		var inputs = yaf_element.querySelectorAll("input");
-		for (var i=0; i < inputs.length; ++i) {
-			inputs[i].disabled = true;
-		}
-			*/
 	}
-	function update_user(event, data) {
+	function update_user([event, id]) {
 		if (user_edit_element) {
 			return;
 		}
@@ -179,12 +169,37 @@
 		tmp_click = yaf_element.onclick;
 		yaf_element.onclick = function() {};
 		user_edit_element = yaf_element.getAttribute("yaf_id");
-			/*
-		var inputs = yaf_element.querySelectorAll("input");
-		for (var i=0; i < inputs.length; ++i) {
-			inputs[i].disabled = false;
+	}
+	function delete_user([event, id]) {
+		event.stopPropagation();
+		if (!this.instances[id]) {
+			this.task.error("unable to find model ["+id+"]");
+			return;
 		}
-			*/
+		var ui_element = this.instances[id].ui["table_instance"];
+		if (!ui_element) {
+			this.task.error("unable to find user ui");
+			return;
+		}
+		var user_name = this.instances[id].attrs.login_name;
+		if (!user_name) {
+			this.task.error("unable to find user name");
+			return;
+		}
+		this.task.debug("delete user name ="+user_name);
+		function handler(data) {
+			if ("0" !== data[0]) {
+				this.task.error("delete_user(): handler(): server data not valid ="+data+";");
+				return;
+			}
+			this.task.run_async("core", "ui_element", "remove", ui_element);
+
+			this.instances[id] = null;
+			// TODO refactor - the same as stop edit
+			this.task.result = "user delete [OK]";
+		}
+		// perform request
+		this.task.run_async("core", "net", "req_delete", ["?users/name="+user_name, handler.bind(this)]);
 	}
 	function login(data) {
 		var func = "login(): ";
